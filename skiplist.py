@@ -1,23 +1,12 @@
 import random
-import collections
-
-
-class NilNode(object):
-    def __init__(self):
-        self.key = float('inf')
-        self.val = float('inf')
-
-
-NIL = NilNode()
+from icecream import ic
 
 
 class Node(object):
-    def __init__(self, key, val, levels = 0):
+    def __init__(self, key, val, levels=0):
         self.key = key
         self.val = val
-        # self.forward = [None] * levels
-        self.forward = collections.defaultdict(lambda: NIL)
-        [self.forward[i] for i in range(levels + 1)]
+        self.forward = [None] * levels
 
     def __str__(self):
         return '<Node ({}, {})'.format(self.key, self.val)
@@ -31,50 +20,75 @@ class Node(object):
 
 class SkipList(object):
     def __init__(self):
-        self.header = Node(None, None)
+        self.header = Node(None, None, 1)
+        self.level = 0
+        self.max_level = 1
 
     def insert(self, key, val):
-        # search_key = hash(key)
-        search_key = key
-        # local_update = [None] * len(self.header)
-        update = collections.defaultdict(lambda: NIL)
+        node = Node(key, val, levels=self.random_level())
+        self.max_level = max(self.max_level, len(node.forward))
 
-        x = self.header
-        for i in range(len(self.header), -1):
-            print('i is ', i)
-            while self.header.forward[i].key < search_key:
-                x = self.header.forward[i]
-            update[i] = x
-        print(x, 'update', update)
+        while len(self.header.forward) < len(node.forward):
+            self.header.forward.append(None)
 
-        if x.key == search_key:
-            x.val = val
-        else:
-            lvl = self.random_level()
-            print('Random lvl generated is', lvl)
-            if lvl > len(self.header):
-                for i in range(len(self.header), lvl - 1):
-                    update[i] = self.header  # Hmm..??
-            x = Node(search_key, val, levels=lvl)
-            for i in range(0, lvl + 1):
-                if not isinstance(x.forward[i], NilNode):
-                    x.forward[i] = update[i].forward[i]
-                    update[i].forward[i] = x
-        pass
+        update = [None] * self.max_level
 
-    def delete(self, key, val):
-        pass
+        cur = self.header
+        for i in reversed(range(len(self.header))):
+            while cur.forward[i] and cur.forward[i].key < key:
+                cur = cur.forward[i]
+            update[i] = cur
+
+        # Update key/val if exists and exist, else splice in node
+        if cur.key == key:
+            cur.val = val
+            return
+
+        if len(node.forward) > self.level:
+            for i in range(self.level, len(node.forward)):
+                update[i] = self.header
+            self.level = len(node.forward)
+
+        for i in range(len(node.forward)):
+            node.forward[i] = update[i].forward[i]
+            update[i].forward[i] = node
+
+    def delete(self, key):
+        node = self.search(key)
+        if not node: return
+
+        update = [None] * self.max_level
+        cur = self.header
+        for i in reversed(range(len(self.header))):
+            while cur.forward[i] and cur.forward[i].key < key:
+                cur = cur.forward[i]
+            update[i] = cur
+
+        for i in reversed(range(len(node.forward))):
+            update[i].forward[i] = node.forward[i]
+            if self.header.forward[i] == None:
+                self.max_level -= 1
+        self.level -= 1
 
     def search(self, key):
-        pass
+        cur = self.header
+        for i in reversed(range(len(self.header))):
+            while cur.forward[i] is not None and key > cur.forward[i].key:
+                cur = cur.forward[i]
+
+        if key == cur.key:
+            return cur
+        elif cur.forward[i] and key == cur.forward[i].key:
+            return cur.forward[i]
 
     def random_level(self):
-        lvl = 0
-        p = 0.5
-        max_level = len(self.header)
-        while random.random() < p and lvl < max_level:
+        lvl = 1
+        while random.uniform(0, 1) < 0.5:  # and lvl < self.max_level:
             lvl += 1
         return lvl
+
+    def __contains__(self, key):
+        return self.search(key) is not None
 
     def __getitem__(self, key):
         return self.search(key)
@@ -82,11 +96,29 @@ class SkipList(object):
     def __setitem__(self, key, val):
         return self.insert(key, val)
 
+    def print(self):
+        for level in reversed(range(len(self.header.forward))):
+            cur = self.header.forward[level]
+            print('level', level)
+            while cur is not None:
+                # print('({}, {})'.format(cur.key, cur.val), end=' ')
+                print('{}'.format(cur.val), end=' ')
+                cur = cur.forward[level]
+            print('')
 
-skl = SkipList()
 
 
-skl['a'] = 1
+# skl = SkipList()
+#
+# [skl.insert(chr(65+i), i) for i in range(26)]
+# skl.print()
+#
+# assert 'D' in skl
+# assert 'd' not in skl
+#
+
+
+# skl['a'] = 1
 # skl['b'] = 2
 # skl['c'] = 3
 
