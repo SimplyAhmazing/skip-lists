@@ -105,27 +105,3 @@ class SkipList(object):
                 print('{}'.format(cur.val), end=' ')
                 cur = cur.forward[level]
             print('')
-
-
-
-# skl = SkipList()
-#
-# [skl.insert(chr(65+i), i) for i in range(26)]
-# skl.print()
-#
-# assert 'D' in skl
-# assert 'd' not in skl
-#
-
-
-# skl['a'] = 1
-# skl['b'] = 2
-# skl['c'] = 3
-
-# assert skl['a'] == 1
-# assert skl['b'] == 2
-# assert skl['c'] == 3
-#
-# del skl['c']
-#
-# assert skl['c'] == None
